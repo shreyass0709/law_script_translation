@@ -19,8 +19,6 @@ Newest entry first.
 
 ## Open decisions
 
-- Konkani output script: Devanagari only, or also Kannada script? (ask guide)
-- Frontend: Next.js or Streamlit?
 - Where large data/model files live (shared Drive vs. Hugging Face) — add the link here.
 
 ## Decisions made
@@ -29,6 +27,9 @@ Newest entry first.
 - 2026-10-08 — Base model: AI4Bharat IndicTrans2 (`kan_Knda`, `gom_Deva`). Start with the
   distilled 200M model, move to 1B on GPU if quality needs it.
 - 2026-10-08 — Backend in Python (FastAPI). No database or login in v1.
+- 2026-10-08 — Konkani is shown in **Kannada script**: model outputs Devanagari, pipeline
+  converts the script with a library. Confirm with the guide; reversing it is one switch.
+- 2026-10-08 — Frontend is **Next.js**; backend stays Python.
 
 ## Log
 

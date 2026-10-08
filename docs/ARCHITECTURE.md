@@ -22,14 +22,17 @@ Each objective maps to a module below.
 |----------|--------|------------------|-------|
 | English (source) | Latin | `eng_Latn` | |
 | Kannada | Kannada | `kan_Knda` | Well resourced; fine-tuning is realistic |
-| Konkani | Devanagari | `gom_Deva` | Low resource; very little legal parallel data |
+| Konkani | Kannada (converted from Devanagari) | `gom_Deva` | Low resource; very little legal parallel data |
 
-**Open decision — Konkani script.** The model produces Konkani in Devanagari
-(the official script, used in Goa). Konkani in coastal Karnataka is usually
-written in Kannada script. If the team wants that, add a rule-based
-Devanagari → Kannada script conversion as a post-processing step (script
-conversion only, the words do not change). Decide with the guide, record it in
-`PROGRESS.md`.
+**Konkani script: Kannada script (decided 2026-10-08).** The model can only
+produce Konkani in Devanagari (the official script, used in Goa). Konkani in
+coastal Karnataka is written in Kannada script, so the pipeline converts the
+model output with a rule-based Devanagari → Kannada script conversion (script
+only, the words do not change). Use an existing library for this
+(`aksharamukha` or `indic-transliteration`), not hand-written rules. The
+Devanagari text is the intermediate result, so offering it as a second view
+costs nothing. Konkani-specific spellings (nasal vowels, nukta letters) need
+checking by a Konkani speaker — keep a small list of test words.
 
 ## 3. Pipeline
 
@@ -47,7 +50,7 @@ conversion only, the words do not change). Decide with the guide, record it in
           │ 3. Protect       mask numbers, citations, glossary  │
           │ 4. Translate     IndicTrans2 (batch of sentences)   │
           │ 5. Postprocess   unmask, apply glossary, rebuild    │
-          │ 6. (optional)    Konkani script conversion          │
+          │ 6. Konkani only  Devanagari → Kannada script        │
           └─────┬───────────────────────────────────────────────┘
                 │ {segments: [{source, translation, terms}]}
                 ▼
@@ -109,7 +112,9 @@ Things that must come out unchanged are replaced by placeholders, then restored:
 - Side-by-side source and translation, aligned per segment; legal terms highlighted with
   the glossary meaning on hover; flagged segments marked "needs review".
 - Copy and download (TXT) of the result. Visible "not a certified translation" disclaimer.
-- Stack: Next.js (React). Swappable for Streamlit if the team prefers Python-only.
+- Stack: **Next.js (React), decided 2026-10-08.** Chosen over Streamlit because the UI needs
+  segment-aligned columns, per-term hover highlights and review flags, which Streamlit
+  handles poorly. Only the frontend owner needs to know React; everyone else works in Python.
 
 ### 4.8 Evaluation (objective 5)
 - **Automatic**: BLEU and chrF++ with `sacrebleu` on a held-out legal test set per language.
