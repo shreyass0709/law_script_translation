@@ -1,0 +1,7 @@
+# Install torch first, separately (see README): GPU and CPU builds come from different indexes.
+# transformers 5.x breaks the IndicTrans2 model code (it imports transformers.onnx); stay on 4.x.
+transformers==4.51.3
+sentencepiece==0.2.2
+sacremoses==0.2.0
+indic-nlp-library==0.92
+aksharamukha==2.3

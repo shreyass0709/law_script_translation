@@ -5,8 +5,8 @@ Newest entry first.
 
 ## Current status
 
-- **Sprint:** 0 (setup)
-- **Next up:** Sprint 1 — baseline end to end (see `ARCHITECTURE.md` section 7)
+- **Sprint:** 1 (baseline) — model half done
+- **Next up:** FastAPI `POST /translate` around `backend/translate.py`, then a bare Next.js page
 
 ## Owners
 
@@ -28,10 +28,22 @@ Newest entry first.
   distilled 200M model, move to 1B on GPU if quality needs it.
 - 2026-10-08 — Backend in Python (FastAPI). No database or login in v1.
 - 2026-10-08 — Konkani is shown in **Kannada script**: model outputs Devanagari, pipeline
-  converts the script with a library. Confirm with the guide; reversing it is one switch.
+  converts the script with a library. Confirmed by the guide.
 - 2026-10-08 — Frontend is **Next.js**; backend stays Python.
 
 ## Log
+
+### 2026-10-08 — baseline translation works
+- Done: `backend/translate.py` translates English into Kannada, and into Konkani converted to
+  Kannada script (aksharamukha). Runs on GPU or CPU. Setup steps are in the README.
+- Gotchas found:
+  - The official `IndicTransToolkit` package needs a C compiler on Windows. We vendor its last
+    pure-Python processor as `backend/indic_processor.py` instead.
+  - `transformers` 5.x cannot load the model; pinned to 4.51.3.
+  - The model is gated on Hugging Face: every member needs their own account, access and token.
+- Not checked yet: translation quality. Native speakers must review the two sample outputs,
+  and the Konkani spelling after script conversion.
+- Next: API route, then the UI; in parallel start collecting the glossary and test sentences.
 
 ### 2026-10-08 — project setup
 - Done: README, architecture doc, this log, CLAUDE.md, .gitignore.

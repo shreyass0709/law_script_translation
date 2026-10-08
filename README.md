@@ -22,7 +22,38 @@ cd law_script_translation
 ```
 
 Then read `docs/ARCHITECTURE.md` and the top of `docs/PROGRESS.md`.
-Backend/frontend setup commands will be added here as each part is created.
+
+### Backend setup (Python 3.13, Windows PowerShell)
+
+```powershell
+# 1. Virtual environment. Keep it OUTSIDE OneDrive/Dropbox folders: it is several GB.
+python -m venv $HOME\.venvs\law-script-translation
+& $HOME\.venvs\law-script-translation\Scripts\Activate.ps1
+
+# 2. PyTorch. With an NVIDIA GPU:
+pip install torch --index-url https://download.pytorch.org/whl/cu124
+#    Without one (slower, but works):
+pip install torch
+
+# 3. Everything else
+pip install -r backend\requirements.txt
+```
+
+The model is access-restricted on Hugging Face, so each person does this once:
+
+1. Create a free account at huggingface.co.
+2. Open https://huggingface.co/ai4bharat/indictrans2-en-indic-dist-200M and accept the terms.
+3. Create a **Read** token at https://huggingface.co/settings/tokens.
+4. Run `hf auth login` and paste the token. Never commit or share the token.
+
+Check it works (first run downloads the model, under 1 GB):
+
+```powershell
+$env:PYTHONIOENCODING = "utf-8"
+python backend\translate.py
+```
+
+It prints two sample sections in Kannada and Konkani and ends with `OK`.
 
 ## Team workflow (4 people, one repo)
 
