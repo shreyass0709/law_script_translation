@@ -55,6 +55,16 @@ python backend\translate.py
 
 It prints two sample sections in Kannada and Konkani and ends with `OK`.
 
+### Run the API
+
+```powershell
+uvicorn api:app --app-dir backend
+```
+
+Open http://127.0.0.1:8000/docs and try `POST /translate` with
+`{"text": "Section 302 ...", "target_lang": "kn"}` (or `"kok"`). One segment per input line.
+`python backend	est_api.py` checks it end to end, including that numbers and dates survive.
+
 ## Team workflow (4 people, one repo)
 
 1. `git checkout main && git pull` before starting anything.
