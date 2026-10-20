@@ -9,3 +9,8 @@ fastapi==0.152.0
 uvicorn==0.54.0
 # Only for backend/test_api.py (FastAPI's TestClient).
 httpx==0.28.1
+# Only for training/ (building the test set and scoring). Also needs Tesseract installed.
+sacrebleu==2.6.0
+pymupdf==2.0
+pytesseract==0.3.13
+pillow==13.0.0
