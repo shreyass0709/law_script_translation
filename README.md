@@ -65,6 +65,19 @@ Open http://127.0.0.1:8000/docs and try `POST /translate` with
 `{"text": "Section 302 ...", "target_lang": "kn"}` (or `"kok"`). One segment per input line.
 `python backend	est_api.py` checks it end to end, including that numbers and dates survive.
 
+### Run the website
+
+Needs Node.js 20 or newer. Keep the API running in one PowerShell window, then in a second one:
+
+```powershell
+cd frontend
+npm install      # first time only
+npm run dev
+```
+
+Open http://localhost:3000, paste English text, pick Kannada or Konkani, and click Translate.
+The page sends `/api/*` requests on to the API at `http://127.0.0.1:8000`; set `API_URL` to change that.
+
 ## Team workflow (4 people, one repo)
 
 1. `git checkout main && git pull` before starting anything.

@@ -5,17 +5,17 @@ Newest entry first.
 
 ## Current status
 
-- **Sprint:** 1 (baseline) — model and API done
-- **Next up:** bare Next.js page calling `POST /translate`
+- **Sprint:** 1 (baseline) — done: model, API and web page work end to end
+- **Next up:** test sentences + starter glossary, then Sprint 2 (segmentation, number protection)
 
 ## Owners
 
 | Area | Owner |
 |------|-------|
-| Data & glossary | _unassigned_ |
-| Preprocessing | _unassigned_ |
-| Model & evaluation | _unassigned_ |
-| API & frontend | _unassigned_ |
+| Data & glossary | Shashank G Suvarna |
+| Preprocessing | Srajan D Prabhu |
+| Model & evaluation | Shridhar V Kamath |
+| API & frontend | Shreyas S |
 
 ## Open decisions
 
@@ -32,6 +32,13 @@ Newest entry first.
 - 2026-10-08 — Frontend is **Next.js**; backend stays Python.
 
 ## Log
+
+### 2026-10-20 — web page
+- Done: `frontend/`, a Next.js page with English text input, a Kannada/Konkani switch, and
+  source-next-to-translation results. It shows the disclaimer at the top.
+- The page sends `/api/*` requests on to FastAPI (`next.config.mjs`), so the backend needs no CORS setup.
+- Run with `npm run dev` in `frontend/` while the API is running; see the README.
+- Sprint 1 goal met: paste English, get Kannada and Konkani through the API and the UI.
 
 ### 2026-10-20 — translate API
 - Done: `backend/api.py`, FastAPI `POST /translate` taking `{text, target_lang: "kn" | "kok"}` and
