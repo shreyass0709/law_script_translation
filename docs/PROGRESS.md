@@ -6,7 +6,7 @@ Newest entry first.
 ## Current status
 
 - **Sprint:** 1 (baseline) — done: model, API and web page work end to end
-- **Next up:** test sentences + starter glossary, then Sprint 2 (segmentation, number protection)
+- **Next up:** native-speaker check of the test set, starter glossary, then Sprint 2 (segmentation, number protection)
 
 ## Owners
 
@@ -20,6 +20,7 @@ Newest entry first.
 ## Open decisions
 
 - Where large data/model files live (shared Drive vs. Hugging Face) — add the link here.
+- Test set (`data/processed/constitution_test.csv`, git-ignored) is OCR'd and **not yet checked by a native speaker**; the scores below are provisional until it is.
 
 ## Decisions made
 
@@ -32,6 +33,24 @@ Newest entry first.
 - 2026-10-08 — Frontend is **Next.js**; backend stays Python.
 
 ## Log
+
+### 2026-10-20 — baseline scores (provisional)
+- Test set: 49 English sentences with official Kannada and Konkani text, Constitution articles
+  12-100, from the government PDFs. Built by `training/build_testset.py`; scored by `training/evaluate.py`.
+- Baseline (distilled 200M model, no glossary, no fine-tuning):
+
+  | Language | chrF++ | BLEU |
+  |----------|--------|------|
+  | Kannada  | 52.8   | 14.8 |
+  | Konkani (Kannada script) | 39.1 | 8.3 |
+
+  Konkani references are Devanagari, converted to Kannada script the same way as the output.
+- How the data was made: `kannada.pdf` (English/Kannada diglot) and `konkani.pdf` have broken text
+  layers (legacy font encoding, swapped letters), so the pages are OCR'd with Tesseract
+  (`kan`, `mar`, `hin`, `eng` data in `~/.tessdata`). The OCR text looked clean, but a few letters
+  will be wrong. Only articles without amendment footnotes and with matching clause counts are kept.
+- PDFs live in `data/raw/` (git-ignored). Get them from legislative.gov.in (Constitution in regional languages).
+- Next: a Kannada and a Konkani speaker check the 49 rows (set `reviewed` to yes or fix them), then re-score.
 
 ### 2026-10-20 — web page
 - Done: `frontend/`, a Next.js page with English text input, a Kannada/Konkani switch, and
