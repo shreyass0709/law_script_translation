@@ -9,6 +9,7 @@ from typing import Literal
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
 
+from segment import segment
 from translate import _load, translate
 
 DISCLAIMER = "Machine translation for legal awareness only. Not a certified legal translation."
@@ -24,8 +25,9 @@ app = FastAPI(title="Law Script Translation", lifespan=lifespan)
 
 
 class TranslateRequest(BaseModel):
-    # ponytail: 5000-char cap until Sprint 2 segmentation handles long acts properly.
-    text: str = Field(min_length=1, max_length=5000)
+    # ponytail: 20,000-char cap (a few pages) keeps one request to a couple of minutes on CPU.
+    # Bigger documents need the file-upload route with background jobs.
+    text: str = Field(min_length=1, max_length=20000)
     target_lang: Literal["kn", "kok"]
 
 
@@ -42,11 +44,9 @@ class TranslateResponse(BaseModel):
 
 @app.post("/translate")
 def translate_text(req: TranslateRequest) -> TranslateResponse:
-    # ponytail: one segment per non-empty line; Sprint 2 preprocessing replaces this
-    # with real sentence/clause segmentation.
-    lines = [line.strip() for line in req.text.splitlines() if line.strip()]
-    outputs = translate(lines, req.target_lang) if lines else []
+    segs = segment(req.text)
+    outputs = translate(segs, req.target_lang) if segs else []
     return TranslateResponse(
         target_lang=req.target_lang,
-        segments=[Segment(source=s, translation=t) for s, t in zip(lines, outputs)],
+        segments=[Segment(source=s, translation=t) for s, t in zip(segs, outputs)],
     )

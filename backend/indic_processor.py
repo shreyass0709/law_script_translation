@@ -184,6 +184,16 @@ class IndicProcessor:
         self._NUMERAL_PATTERN = r"(~?\d+\.?\d*\s?%?\s?-?\s?~?\d+\.?\d*\s?%|~?\d+%|\d+[-\/.,:']\d+[-\/.,:'+]\d+(?:\.\d+)?|\d+[-\/.:'+]\d+(?:\.\d+)?)"
         self._EMAIL_PATTERN = r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}"
         self._OTHER_PATTERN = r"[A-Za-z0-9]*[#|@]\w+"
+        # Project addition: legal references the model mangles, kept unchanged.
+        # 302(2)(b), 123(E) | 21A | (b), (iv) | 5,000 and 1,00,000
+        # Plain numbers and "(3)" are left alone: the model keeps them, and every placeholder
+        # costs context (measured: masking "(3)"-style markers lowered Kannada chrF++ by ~4).
+        self._LEGAL_PATTERN = (
+            r"\b\d+[A-Z]{0,2}(?:\((?:\d+[A-Z]?|[a-z]{1,2}|[ivxlc]{1,6}|[A-Z])\))+"
+            r"|\b\d+[A-Z]{1,2}\b"
+            r"|\((?:[a-z]{1,2}|[ivxlc]{1,6})\)"
+            r"|\b\d{1,3}(?:,\d{2,3})+(?:\.\d+)?\b"
+        )
 
     def get_batches(self, sentences: List[str], batch_size=8):
         for i in tqdm(range(0, len(sentences), batch_size)):
@@ -286,7 +296,8 @@ class IndicProcessor:
         ]
 
         for pattern in patterns:
-            matches = set(re.findall(pattern, text))
+            # Longest first, so "(2)" never splits a longer match like "302(2)(b)".
+            matches = sorted(set(re.findall(pattern, text)), key=len, reverse=True)
 
             # wrap common match with placeholder tags
             for match in matches:
@@ -353,6 +364,7 @@ class IndicProcessor:
         patterns = [
             self._EMAIL_PATTERN,
             self._URL_PATTERN,
+            self._LEGAL_PATTERN,
             self._NUMERAL_PATTERN,
             self._OTHER_PATTERN,
         ]
@@ -399,8 +411,10 @@ class IndicProcessor:
             sent (str): a preprocessed input text sentence
         """
         iso_lang = self._flores_codes.get(lang, "hi")
-        sent = self._punc_norm(sent)
+        # Project change: mask before punctuation normalisation, which turns
+        # "302(2)(b)" into "302 (2) (b)" and would break the legal-reference pattern.
         sent = self._normalize(sent)
+        sent = self._punc_norm(sent)
 
         transliterate = True
         if lang.split("_")[1] in ["Arab", "Aran", "Olck", "Mtei", "Latn"]:
@@ -508,8 +522,16 @@ class IndicProcessor:
         if lang_code == "ory":
             sent = sent.replace("ଯ଼", "ୟ")
 
-        for k, v in placeholder_entity_map.items():
-            sent = sent.replace(k, v)
+        # Longest key first: the bare key "ID1" must not eat into "<ID10>".
+        for k in sorted(placeholder_entity_map, key=len, reverse=True):
+            sent = sent.replace(k, placeholder_entity_map[k])
+        # Project addition: the model sometimes transliterates "ID" in ways the list above
+        # misses (e.g. "<ऐ. डि. 1>"); restore any leftover <...N> by its serial number.
+        sent = re.sub(
+            r"[<\[]\s*[^<>\[\]\d]{0,20}?\s*(\d+)\s*[>\]]",
+            lambda m: placeholder_entity_map.get(f"<ID{m.group(1)}>", m.group(0)),
+            sent,
+        )
 
         return (
             self._en_detok.detokenize(sent.split(" "))

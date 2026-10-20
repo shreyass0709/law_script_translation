@@ -5,7 +5,10 @@ from fastapi.testclient import TestClient
 
 from api import app
 
-SAMPLE = "Section 302 of the Indian Penal Code was amended on 15 August 2023.\nThe Act came into force in 1950."
+SAMPLE = (
+    "Section 302 of the Indian Penal Code was amended on 15 August 2023.\nThe Act came into force in 1950.\n"
+    "A fine of Rs. 5,000 may be imposed under section 302(2)(b), and article 21A shall apply."
+)
 
 if __name__ == "__main__":
     sys.stdout.reconfigure(encoding="utf-8")
@@ -16,10 +19,11 @@ if __name__ == "__main__":
             r = client.post("/translate", json={"text": SAMPLE, "target_lang": lang})
             assert r.status_code == 200, r.text
             body = r.json()
-            assert len(body["segments"]) == 2 and body["disclaimer"]
+            # Single line breaks are treated as PDF line wrapping, so this is one segment.
+            assert len(body["segments"]) == 1 and body["disclaimer"]
             out = " ".join(s["translation"] for s in body["segments"])
             print(f"[{lang}] {out}")
             # Project rule: numbers, section references and dates survive unchanged.
-            for token in ("302", "15", "2023", "1950"):
+            for token in ("302", "15", "2023", "1950", "5,000", "302(2)(b)", "21A"):
                 assert token in out, f"{lang}: {token!r} lost in translation"
     print("OK")

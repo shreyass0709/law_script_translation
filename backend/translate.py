@@ -29,18 +29,24 @@ def _load():
     return tokenizer, model, IndicProcessor(inference=True)
 
 
+BATCH = 8
+
+
 def translate(sentences: list[str], lang: str) -> list[str]:
-    """Translate English sentences. lang is "kn" or "kok"; both come back in Kannada script."""
+    """Translate English sentences. lang is "kn" or "kok"; both come back in Kannada script.
+
+    Pass segments from segment.py: the model truncates anything over 256 tokens.
+    """
     tgt = LANGS[lang]
     tokenizer, model, ip = _load()
-    batch = ip.preprocess_batch(sentences, src_lang=SRC, tgt_lang=tgt)
-    inputs = tokenizer(batch, truncation=True, padding="longest", return_tensors="pt").to(DEVICE)
-    with torch.no_grad():
-        # ponytail: one batch, 256-token cap. Long sections get truncated until the
-        # preprocessing module (Sprint 2) splits them into sentence-sized segments.
-        out = model.generate(**inputs, max_length=256, num_beams=5)
-    decoded = tokenizer.batch_decode(out, skip_special_tokens=True, clean_up_tokenization_spaces=True)
-    result = ip.postprocess_batch(decoded, lang=tgt)
+    result = []
+    for i in range(0, len(sentences), BATCH):
+        batch = ip.preprocess_batch(sentences[i:i + BATCH], src_lang=SRC, tgt_lang=tgt)
+        inputs = tokenizer(batch, truncation=True, padding="longest", return_tensors="pt").to(DEVICE)
+        with torch.no_grad():
+            out = model.generate(**inputs, max_length=256, num_beams=5)
+        decoded = tokenizer.batch_decode(out, skip_special_tokens=True, clean_up_tokenization_spaces=True)
+        result += ip.postprocess_batch(decoded, lang=tgt)
     if lang == "kok":
         result = [transliterate.process("Devanagari", "Kannada", s) for s in result]
     return result

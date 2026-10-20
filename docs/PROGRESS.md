@@ -5,8 +5,8 @@ Newest entry first.
 
 ## Current status
 
-- **Sprint:** 1 (baseline) — done: model, API and web page work end to end
-- **Next up:** native-speaker check of the test set, starter glossary, then Sprint 2 (segmentation, number protection)
+- **Sprint:** 2 (preprocessing + protection) — done
+- **Next up:** Sprint 3 — glossary (EN→KN, EN→KOK legal terms) and enforcement; native-speaker check of the test set
 
 ## Owners
 
@@ -33,6 +33,28 @@ Newest entry first.
 - 2026-10-08 — Frontend is **Next.js**; backend stays Python.
 
 ## Log
+
+### 2026-10-20 — Sprint 2: segmentation and reference protection
+- `backend/segment.py` cleans pasted/PDF text (joins wrapped lines and hyphenation) and splits it at
+  sections, `(1)`/`(a)` markers, provisos and explanations. Segments over 600 characters are also
+  split at `;`/`:` and sentences, so nothing reaches the model's 256-token limit.
+- Reference protection reuses IndicTrans2's `<ID>` placeholders with one extra pattern in
+  `backend/indic_processor.py`. Before, the model wrote `5, 000`, `21ಎ` and `(ಬಿ)`; now `5,000`,
+  `21A` and `302(2)(b)` come out unchanged (checked in `backend/test_api.py`).
+- Fixed two problems in the vendored processor: placeholders the model transliterated
+  (`<ऐ. डि. 1>`) are now restored, and `ID1` no longer breaks `<ID10>`.
+- Scores on the 49-sentence test set (chrF++ / BLEU):
+
+  | | Baseline | Sprint 2 |
+  |---|---|---|
+  | Kannada | 52.8 / 14.8 | 52.0 / 14.9 |
+  | Konkani | 39.1 / 8.3 | 38.6 / 8.5 |
+
+  About level overall, but references are now exact. Two first attempts scored lower (47.8):
+  masking every `(3)` cost ~4 points and splitting every sentence cost ~2.6, so both were narrowed.
+- Known: with less context, "article" sometimes comes out as ಲೇಖನ instead of ಅನುಚ್ಛೇದ. That is the
+  glossary's job (Sprint 3). Clause letters stay Latin `(b)`, while official Kannada texts write `(ಬಿ)`.
+- The API input cap was raised to 20,000 characters.
 
 ### 2026-10-20 — baseline scores (provisional)
 - Test set: 49 English sentences with official Kannada and Konkani text, Constitution articles

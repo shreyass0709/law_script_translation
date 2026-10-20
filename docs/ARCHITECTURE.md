@@ -73,13 +73,17 @@ Offline, separate from the request path:
 - **Clean**: fix PDF line breaks and hyphenation, collapse whitespace, strip page headers/footers.
 - **Segment by legal structure**: section → sub-section `(1)` → clause `(a)` → proviso
   ("Provided that…") → explanation. Keep the hierarchy so output can be rebuilt in the same shape.
-- **Sentence split** long sub-sections on `;` / `:` / proviso boundaries. Legal sentences
-  are far longer than the model's comfortable length, and quality drops on long inputs.
+- **Sentence split** only sub-sections longer than ~600 characters (on `;` / `:`, then sentences),
+  to stay under the model's 256-token limit. Measured 2026-10-20: splitting every sentence
+  *lowered* Kannada chrF++ by ~2.6, so shorter segments are kept whole.
 - **Identify legal terms** by matching against the glossary (longest match first).
 
 ### 4.3 Protection (mask before translating)
 Things that must come out unchanged are replaced by placeholders, then restored:
-- Section/article/clause numbers: `Section 302`, `Article 21`, `(2)(b)`
+- Section/article/clause references the model mangles: `302(2)(b)`, `21A`, `(b)`, `(iv)`, `5,000`.
+  Plain numbers and `(3)` are *not* masked: the model keeps them, and each placeholder costs
+  context (measured: masking `(3)`-style markers lowered Kannada chrF++ by ~4).
+  Implemented as an extra pattern in the IndicTrans2 processor's own `<ID>` placeholder system.
 - Citations and act names with year: `Indian Penal Code, 1860`
 - Dates, amounts, percentages
 - Latin maxims and terms the glossary marks "do not translate"

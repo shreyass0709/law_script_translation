@@ -62,7 +62,9 @@ uvicorn api:app --app-dir backend
 ```
 
 Open http://127.0.0.1:8000/docs and try `POST /translate` with
-`{"text": "Section 302 ...", "target_lang": "kn"}` (or `"kok"`). One segment per input line.
+`{"text": "Section 302 ...", "target_lang": "kn"}` (or `"kok"`). The text is split into sections,
+sub-sections, clauses and provisos (`backend/segment.py`); legal references such as `302(2)(b)`,
+`21A` and `5,000` are kept unchanged.
 `python backend	est_api.py` checks it end to end, including that numbers and dates survive.
 
 ### Run the website
