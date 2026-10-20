@@ -69,9 +69,22 @@ export default function Home() {
           </thead>
           <tbody>
             {segments.map((s, i) => (
-              <tr key={i} style={{ borderTop: "1px solid #ddd", verticalAlign: "top" }}>
+              <tr key={i} style={{ borderTop: "1px solid #ddd", verticalAlign: "top", background: s.needs_review ? "#fff8e1" : undefined }}>
                 <td style={{ padding: "0.5rem" }}>{s.source}</td>
-                <td style={{ padding: "0.5rem" }}>{s.translation}</td>
+                <td style={{ padding: "0.5rem" }}>
+                  {s.needs_review && <strong style={{ color: "#8a5a00" }}>Needs review: </strong>}
+                  {s.translation}
+                  {s.terms.length > 0 && (
+                    <ul style={{ listStyle: "none", padding: 0, margin: "0.4rem 0 0", fontSize: "0.85em" }}>
+                      {s.terms.map((t) => (
+                        <li key={t.en} style={{ color: t.found ? "#2e6b30" : "#b00020" }}>
+                          {t.found ? "✓" : "✗"} {t.en} → {t.target}
+                          {!t.found && " (approved term not used)"}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>

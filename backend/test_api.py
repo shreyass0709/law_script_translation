@@ -21,9 +21,13 @@ if __name__ == "__main__":
             body = r.json()
             # Single line breaks are treated as PDF line wrapping, so this is one segment.
             assert len(body["segments"]) == 1 and body["disclaimer"]
+            terms = {t["en"] for t in body["segments"][0]["terms"]}
+            assert {"section", "article", "Act"} <= terms, terms
             out = " ".join(s["translation"] for s in body["segments"])
             print(f"[{lang}] {out}")
             # Project rule: numbers, section references and dates survive unchanged.
             for token in ("302", "15", "2023", "1950", "5,000", "302(2)(b)", "21A"):
                 assert token in out, f"{lang}: {token!r} lost in translation"
+        g = client.get("/glossary", params={"lang": "kn"}).json()
+        assert {"en": "article", "target": "ಅನುಚ್ಛೇದ"} in g
     print("OK")
