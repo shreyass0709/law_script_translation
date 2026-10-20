@@ -40,11 +40,11 @@ export default function Home() {
       </p>
 
       <form onSubmit={onSubmit}>
-        <label htmlFor="text">English legal text (one sentence or clause per line)</label>
+        <label htmlFor="text">English legal text (paste a section or a few pages; it is split into clauses automatically)</label>
         <textarea
           id="text"
           rows={8}
-          maxLength={5000}
+          maxLength={20000}
           required
           value={text}
           onChange={(e) => setText(e.target.value)}

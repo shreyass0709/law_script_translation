@@ -11,6 +11,7 @@ import sacrebleu
 from aksharamukha import transliterate
 
 sys.path.insert(0, "backend")
+from segment import segment  # noqa: E402
 from translate import translate  # noqa: E402
 
 rows = list(csv.DictReader(open("data/processed/constitution_test.csv", encoding="utf-8-sig")))
@@ -22,7 +23,13 @@ refs = {
 sys.stdout.reconfigure(encoding="utf-8")
 print(f"{len(rows)} test sentences")
 for lang, ref in refs.items():
-    hyp = [h for i in range(0, len(src), 8) for h in translate(src[i:i + 8], lang)]
+    # Same path as the API: segment each row, translate the pieces, join them back.
+    segs = [segment(s) for s in src]
+    flat = translate([p for parts in segs for p in parts], lang)
+    hyp, i = [], 0
+    for parts in segs:
+        hyp.append(" ".join(flat[i:i + len(parts)]))
+        i += len(parts)
     chrf = sacrebleu.corpus_chrf(hyp, [ref], word_order=2)  # word_order=2 -> chrF++
     # Kannada/Konkani are agglutinative, so BLEU is harsh; chrF++ is the main number.
     bleu = sacrebleu.corpus_bleu(hyp, [ref], tokenize="none")
