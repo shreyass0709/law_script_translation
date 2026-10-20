@@ -5,8 +5,8 @@ Newest entry first.
 
 ## Current status
 
-- **Sprint:** 1 (baseline) — model half done
-- **Next up:** FastAPI `POST /translate` around `backend/translate.py`, then a bare Next.js page
+- **Sprint:** 1 (baseline) — model and API done
+- **Next up:** bare Next.js page calling `POST /translate`
 
 ## Owners
 
@@ -32,6 +32,17 @@ Newest entry first.
 - 2026-10-08 — Frontend is **Next.js**; backend stays Python.
 
 ## Log
+
+### 2026-10-20 — translate API
+- Done: `backend/api.py`, FastAPI `POST /translate` taking `{text, target_lang: "kn" | "kok"}` and
+  returning `{segments: [{source, translation}], disclaimer}`. The model loads once at startup.
+  Run with `uvicorn api:app --app-dir backend`; docs at `/docs`.
+- `backend/test_api.py` checks the endpoint end to end: "Section 302", "15 August 2023" and
+  "1950" come through unchanged in both languages.
+- Limits for now: one segment per input line, input capped at 5000 characters. Sprint 2
+  preprocessing replaces both. The code is flat in `backend/`, not the `backend/app/` layout in
+  the architecture doc yet; move it when the pipeline modules arrive.
+- Next: bare Next.js page with the disclaimer.
 
 ### 2026-10-08 — baseline translation works
 - Done: `backend/translate.py` translates English into Kannada, and into Konkani converted to

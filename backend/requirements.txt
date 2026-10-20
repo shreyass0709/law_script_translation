@@ -5,3 +5,7 @@ sentencepiece==0.2.2
 sacremoses==0.2.0
 indic-nlp-library==0.92
 aksharamukha==2.3
+fastapi==0.152.0
+uvicorn==0.54.0
+# Only for backend/test_api.py (FastAPI's TestClient).
+httpx==0.28.1
