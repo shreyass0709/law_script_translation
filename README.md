@@ -82,9 +82,9 @@ The page sends `/api/*` requests on to the API at `http://127.0.0.1:8000`; set `
 
 ### Fine-tune on a GPU machine (e.g. the college GPU)
 
-The training data is git-ignored, so copy it yourself (pen drive / Drive): the CSVs in
-`data/processed/` (`constitution_train_kn.csv`, `anuvaad_legal_kn.csv`, `constitution_train_kok.csv`,
-and `constitution_test.csv` for scoring). On the GPU machine (Linux shown):
+The training data is git-ignored, so copy it yourself (pen drive / Drive): **all** CSVs in
+`data/processed/` (legal pairs, `general_*.csv` mix, and `constitution_test.csv` for scoring and
+the leak check). On the GPU machine (Linux shown):
 
 ```bash
 git clone https://github.com/shreyass0709/law_script_translation.git && cd law_script_translation
@@ -96,8 +96,9 @@ mkdir -p data/processed                 # put the copied CSVs here
 
 # 1. Smoke test (a minute): must print a dev loss and save models/lora-kn/
 python training/train_lora.py --lang kn --steps 2 data/processed/constitution_train_kn.csv
-# 2. Real run (Kannada)
-python training/train_lora.py --lang kn data/processed/constitution_train_kn.csv data/processed/anuvaad_legal_kn.csv
+# 2. Real run (Kannada): legal pairs + ~15% general text
+python training/train_lora.py --lang kn data/processed/constitution_train_kn.csv data/processed/anuvaad_legal_kn.csv data/processed/general_kn.csv
+#    Konkani: python training/train_lora.py --lang kok data/processed/constitution_train_kok.csv data/processed/general_kok.csv
 # 3. Score it against the baseline
 LORA_ADAPTER=models/lora-kn python training/evaluate.py
 ```

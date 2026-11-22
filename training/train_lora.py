@@ -48,6 +48,14 @@ random.seed(0)
 pairs = []
 for path in args.csvs:
     pairs += [(r["en"], r[col]) for r in csv.DictReader(open(path, encoding="utf-8-sig")) if r["en"] and r[col]]
+# Never train on test sentences, whatever file they arrive in.
+norm = lambda s: " ".join(s.lower().split())  # noqa: E731
+test = set()
+for path in Path("data/processed").glob("*test*.csv"):
+    test |= {norm(r["en"]) for r in csv.DictReader(open(path, encoding="utf-8-sig"))}
+before = len(pairs)
+pairs = list({norm(e): (e, t) for e, t in pairs if norm(e) not in test}.values())  # also dedups
+print(f"{before} pairs read, {before - len(pairs)} dropped as duplicates or test sentences")
 random.shuffle(pairs)
 n_dev = max(20, len(pairs) // 20)  # 5% held out to watch for overfitting
 dev, train = pairs[:n_dev], pairs[n_dev:]

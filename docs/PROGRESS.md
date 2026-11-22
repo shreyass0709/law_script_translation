@@ -61,6 +61,17 @@ Newest entry first.
   checked on this laptop; the training loop itself has **not been run yet** (planned on the college GPU).
 - ~2,700 Kannada / 275 Konkani pairs is small for LoRA. Next: more legal Kannada pairs (Kannada
   Central Acts on legislative.gov.in / India Code, Karnataka Gazette two-language Acts).
+- `training/build_general_mix.py` samples general text to mix in (~15% of training) so general
+  quality does not drop: `general_kn.csv` (500 from Samanantar) and `general_kok.csv` (300 from the
+  Konkani Excel file). `train_lora.py` now drops any pair whose English is in a `*test*.csv` and
+  removes duplicates; all current files had zero test overlap.
+- Data sources checked online: **MILPaC has no Kannada** (9 other languages). No official Kannada BNS
+  found. Under the Karnataka Official Language Act 1963 s.5A, Kannada translations of Central Acts are
+  published by the Karnataka government (DPAL), so look there, and on India Code's Karnataka State Acts.
+  legislative.gov.in, indiacode.nic.in and dpal.kar.nic.in refuse automated downloads: PDFs must be
+  downloaded by hand in a browser into `data/raw/acts/`.
+- Related work for the report: `law-ai/InLegalTrans-En2Indic-1B` (IndicTrans2 fine-tuned on MILPaC;
+  no Kannada/Konkani), which our Kannada/Konkani legal model complements.
 
 ### 2026-10-20 — Sprint 3: legal glossary
 - `data/glossary/legal_terms.csv`: 59 English terms with Kannada and Konkani (Devanagari) equivalents.
