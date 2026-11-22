@@ -36,6 +36,14 @@ Newest entry first.
 
 ## Log
 
+### 2026-11-23 — native-speaker review sheets
+- `python training/review_sheets.py export` writes `data/processed/review_kn.xlsx` and `review_kok.xlsx`
+  (git-ignored): an instructions sheet, then one row per test sentence with an OK/FIX dropdown and a
+  "Corrected text" column. The Konkani sheet also shows the text in Kannada script for easier reading.
+- When they come back: `python training/review_sheets.py import <file(s)>` copies fixes into
+  `constitution_test.csv` and sets `reviewed=yes` on rows checked in both languages. Re-run
+  `evaluate.py` afterwards; the E0 numbers become final.
+
 ### 2026-11-22 — PDF upload, download, and a decoding fix
 - `POST /extract` takes PDF bytes as the request body and returns the text (pymupdf, now a main
   dependency). Limits: 10 MB; PDFs without an English text layer (scanned) get a 422 with a clear
