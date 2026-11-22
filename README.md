@@ -101,6 +101,7 @@ python training/train_lora.py --lang kn data/processed/constitution_train_kn.csv
 #    Konkani: python training/train_lora.py --lang kok data/processed/constitution_train_kok.csv data/processed/general_kok.csv
 # 3. Score it against the baseline
 LORA_ADAPTER=models/lora-kn python training/evaluate.py
+LORA_ADAPTER=models/lora-kn python training/evaluate.py --test data/processed/acts_test_kn.csv   # held-out Karnataka Act
 ```
 
 If loading fails with `not a valid model identifier` / `OAuth token has expired`, your Hugging Face
