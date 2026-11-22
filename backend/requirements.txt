@@ -15,3 +15,5 @@ httpx==0.28.1
 sacrebleu==2.6.0
 pytesseract==0.3.13
 pillow==13.0.0
+# Only for LoRA fine-tuning (training/train_lora.py) and loading its adapter (LORA_ADAPTER).
+peft==0.15.2

@@ -3,6 +3,7 @@
 Run `python backend/translate.py` to translate the sample sections and
 self-check the output scripts.
 """
+import os
 import sys
 from functools import lru_cache
 
@@ -25,7 +26,11 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 def _load():
     kwargs = {"trust_remote_code": True, "revision": REVISION}
     tokenizer = AutoTokenizer.from_pretrained(MODEL, **kwargs)
-    model = AutoModelForSeq2SeqLM.from_pretrained(MODEL, **kwargs).to(DEVICE).eval()
+    model = AutoModelForSeq2SeqLM.from_pretrained(MODEL, **kwargs)
+    if os.environ.get("LORA_ADAPTER"):  # fine-tuned adapter from training/train_lora.py
+        from peft import PeftModel
+        model = PeftModel.from_pretrained(model, os.environ["LORA_ADAPTER"]).merge_and_unload()
+    model = model.to(DEVICE).eval()
     return tokenizer, model, IndicProcessor(inference=True)
 
 

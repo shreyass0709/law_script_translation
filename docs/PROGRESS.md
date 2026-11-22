@@ -5,8 +5,10 @@ Newest entry first.
 
 ## Current status
 
-- **Sprint:** 3 (glossary) — done: 59 terms, checking and UI flags
-- **Next up:** Sprint 4 — Kannada legal training data + LoRA fine-tuning; native-speaker check of the test set and the glossary
+- **Sprint:** 4 (data + fine-tuning) — in progress. Sprint 3 (glossary, 59 terms) done.
+  Shreyas is working on it alone for now.
+- **Next up:** first LoRA run on the college GPU (`training/train_lora.py`, steps in the README);
+  more Kannada legal pairs (Central Acts). Native-speaker check of the test set and the glossary still pending.
 
 ## Owners
 
@@ -43,10 +45,61 @@ Newest entry first.
 - **Bug fixed in `translate.py`:** beam search without `early_stopping` let padded batches of short
   segments (a PDF's table of contents) run on to 256 tokens of "....", about 50 s per batch, so the
   website's proxy timed out. With `early_stopping=True` a 3-page PDF (90 segments) translates in about
-  11 s. It also changed the baseline: Kannada chrF++ 52.0 → **52.6** (BLEU 14.5, glossary 75%),
-  Konkani 38.6 → **41.5** (BLEU 8.6, glossary 60%). Use these as the E0 numbers.
+  11 s. It also raised the baseline; the E0 table in the next entry has the new numbers.
 - Checked end to end through the website: upload → extract → translate (both languages), non-PDF
   → 400, blank PDF → 422; `backend/test_api.py` covers the same.
+
+### 2026-11-22 — evaluation: legal metrics in one command
+- `training/evaluate.py` now also reports **references kept** (numbers, sections, citations and dates
+  from the source that appear unchanged in the output) and takes `--test <csv>` / `--lang`, so the
+  held-out Act test set can be scored the same way. With `LORA_ADAPTER` set it scores the fine-tuned model.
+- E0 baseline (200M, no fine-tuning, with the `early_stopping` fix), 49-sentence Constitution test
+  set, provisional until reviewed. Compare every fine-tuned run against this:
+
+  | | chrF++ | BLEU | Glossary terms used | References kept |
+  |---|---|---|---|---|
+  | Kannada | 52.6 | 14.5 | 75% (98/131) | 93% (42/45) |
+  | Konkani | 41.5 | 8.6 | 60% (79/131) | 100% (45/45) |
+
+  The official translations keep only 89% of references by this check because they write some in
+  Kannada letters (21A → 21ಎ); that is a style difference, not an error.
+
+### 2026-11-22 — Sprint 4: first Kannada training data
+- `training/build_trainset.py` builds **840 English/Kannada pairs** from the Constitution diglot
+  (`kannada.pdf`): every page except the test pages (68-169, articles 12-100), so no test text leaks
+  in. Each English page is paired with the Kannada page after it, and units are matched by article
+  and clause number; pairs with odd length ratios or amendment footnotes are dropped. Output:
+  `data/processed/constitution_train_kn.csv` (git-ignored). A 10-row sample was all correct pairs,
+  with small OCR letter slips.
+- `training/clean_anuvaad.py` cleans the Anuvaad legal-terms 2021 set (3,356 lines → **1,843 pairs**,
+  case-only duplicates removed): short Supreme Court case headers and names, useful for numbers and
+  citations. Known bad translation: "Special Leave Petition" → ವಿಶೇಷ ರಜೆ ಅರ್ಜಿ ("leave" as holiday).
+- Checked and **not used** for fine-tuning:
+  - Samanantar Kannada (4.09M pairs): AI4Bharat's own data that IndicTrans2 was already trained on,
+    mostly news, so it adds no legal skill. At most ~17k legal-looking rows could be mixed in.
+  - A 70,157-row English/Konkani (Devanagari) Excel file: genuine Konkani but health/tourism text,
+    header row missing, 57 duplicates. Keep it for later Konkani work.
+- `training/build_trainset_kok.py` builds **275 English/Konkani pairs** from `konkani.pdf` (not a
+  diglot, so articles are matched by number across the whole text; suffixes follow Devanagari order,
+  243A = 243क). Test articles 12-100 skipped. Low count: many articles split into different clause
+  counts in the two PDFs and are dropped. A 10-row sample was all correct pairs.
+- `training/train_lora.py` LoRA-fine-tunes IndicTrans2 (attention projections, r=16, best epoch kept
+  by dev loss on a 5% hold-out) and saves `models/lora-<lang>/`. `backend/translate.py` loads it when
+  `LORA_ADAPTER` is set, so `evaluate.py` and the API use it unchanged. Target-side tokenisation was
+  checked on this laptop, and a 2-step smoke test ran on the laptop GPU (RTX 3050 4 GB): dev loss 1.706 → 1.689, adapter saved and loaded by `translate.py`. Full runs are planned on the college GPU.
+- ~2,700 Kannada / 275 Konkani pairs is small for LoRA. Next: more legal Kannada pairs (Kannada
+  Central Acts on legislative.gov.in / India Code, Karnataka Gazette two-language Acts).
+- `training/build_general_mix.py` samples general text to mix in (~15% of training) so general
+  quality does not drop: `general_kn.csv` (500 from Samanantar) and `general_kok.csv` (300 from the
+  Konkani Excel file). `train_lora.py` now drops any pair whose English is in a `*test*.csv` and
+  removes duplicates; all current files had zero test overlap.
+- Data sources checked online: **MILPaC has no Kannada** (9 other languages). No official Kannada BNS
+  found. Under the Karnataka Official Language Act 1963 s.5A, Kannada translations of Central Acts are
+  published by the Karnataka government (DPAL), so look there, and on India Code's Karnataka State Acts.
+  legislative.gov.in, indiacode.nic.in and dpal.kar.nic.in refuse automated downloads: PDFs must be
+  downloaded by hand in a browser into `data/raw/acts/`.
+- Related work for the report: `law-ai/InLegalTrans-En2Indic-1B` (IndicTrans2 fine-tuned on MILPaC;
+  no Kannada/Konkani), which our Kannada/Konkani legal model complements.
 
 ### 2026-10-20 — Sprint 3: legal glossary
 - `data/glossary/legal_terms.csv`: 59 English terms with Kannada and Konkani (Devanagari) equivalents.
