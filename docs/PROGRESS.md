@@ -36,6 +36,20 @@ Newest entry first.
 
 ## Log
 
+### 2026-11-22 — evaluation: legal metrics in one command
+- `training/evaluate.py` now also reports **references kept** (numbers, sections, citations and dates
+  from the source that appear unchanged in the output) and takes `--test <csv>` / `--lang`, so the
+  held-out Act test set can be scored the same way. With `LORA_ADAPTER` set it scores the fine-tuned model.
+- E0 baseline (200M, no fine-tuning), 49-sentence Constitution test set, provisional until reviewed:
+
+  | | chrF++ | BLEU | Glossary terms used | References kept |
+  |---|---|---|---|---|
+  | Kannada | 52.0 | 14.9 | 76% (99/131) | 93% (42/45) |
+  | Konkani | 38.6 | 8.5 | 61% (80/131) | 100% (45/45) |
+
+  The official translations keep only 89% of references by this check because they write some in
+  Kannada letters (21A → 21ಎ); that is a style difference, not an error.
+
 ### 2026-11-22 — Sprint 4: first Kannada training data
 - `training/build_trainset.py` builds **840 English/Kannada pairs** from the Constitution diglot
   (`kannada.pdf`): every page except the test pages (68-169, articles 12-100), so no test text leaks
