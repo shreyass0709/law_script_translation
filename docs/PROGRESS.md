@@ -36,6 +36,13 @@ Newest entry first.
 
 ## Log
 
+### 2026-11-23 — website redesign
+- New look for the demo (plain CSS in `frontend/app/globals.css`, no new packages): header, language
+  toggle with Kannada names, PDF drag-and-drop, character counter, "Try a sample" and "Clear",
+  results as English / translation rows with glossary chips, a summary (segments, approved terms
+  used, segments needing review), a "show only needs review" filter, Copy and Download. Light and dark
+  mode follow the system; works at phone width. Disclaimer kept at the top and in the footer.
+
 ### 2026-11-22 — PDF upload, download, and a decoding fix
 - `POST /extract` takes PDF bytes as the request body and returns the text (pymupdf, now a main
   dependency). Limits: 10 MB; PDFs without an English text layer (scanned) get a 422 with a clear

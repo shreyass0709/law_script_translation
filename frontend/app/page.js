@@ -5,6 +5,14 @@ const DISCLAIMER =
   "Machine translation for legal awareness only. Not a certified legal translation. " +
   "Verify with a qualified person before any official use.";
 const MAX_CHARS = 20000; // same cap as the API
+const LANGS = {
+  kn: { name: "Kannada", native: "ಕನ್ನಡ" },
+  kok: { name: "Konkani", native: "ಕೊಂಕಣಿ", note: "Kannada script" },
+};
+const SAMPLE =
+  "1. Short title and commencement.—(1) This Act may be called the Right to Information Act, 2005.\n\n" +
+  "(2) A fine of Rs. 5,000 may be imposed under section 302(2)(b), and article 21A shall apply.\n\n" +
+  "(3) Every public authority shall maintain all its records duly catalogued and indexed.";
 
 // The API's own message (FastAPI puts it in `detail`), else a hint that it is not running.
 async function apiError(res) {
@@ -16,6 +24,10 @@ async function apiError(res) {
   return new Error(`Server error ${res.status}. Is the API running?`);
 }
 
+function friendly(err) {
+  return err.message === "Failed to fetch" ? "Cannot reach the server. Is the website running?" : err.message;
+}
+
 export default function Home() {
   const [text, setText] = useState("");
   const [lang, setLang] = useState("kn");
@@ -23,13 +35,17 @@ export default function Home() {
   const [resultLang, setResultLang] = useState("kn");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [busy, setBusy] = useState(""); // "", "pdf" or "translate"
+  const [over, setOver] = useState(false);
+  const [onlyReview, setOnlyReview] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   async function onSubmit(e) {
     e.preventDefault();
-    setLoading(true);
+    setBusy("translate");
     setError("");
     setSegments([]);
+    setOnlyReview(false);
     try {
       const res = await fetch("/api/translate", {
         method: "POST",
@@ -40,19 +56,17 @@ export default function Home() {
       setSegments((await res.json()).segments);
       setResultLang(lang);
     } catch (err) {
-      setError(err.message === "Failed to fetch" ? "Cannot reach the server. Is the website running?" : err.message);
+      setError(friendly(err));
     } finally {
-      setLoading(false);
+      setBusy("");
     }
   }
 
-  async function onPdf(e) {
-    const file = e.target.files[0];
-    e.target.value = ""; // allow choosing the same file again
+  async function loadPdf(file) {
     if (!file) return;
     setError("");
     setNotice("");
-    setLoading(true);
+    setBusy("pdf");
     try {
       const res = await fetch("/api/extract", { method: "POST", body: file });
       if (!res.ok) throw await apiError(res);
@@ -64,18 +78,31 @@ export default function Home() {
           : `Loaded ${file.name} (${pages} pages). Check the text, then click Translate.`
       );
     } catch (err) {
-      setError(err.message);
+      setError(friendly(err));
     } finally {
-      setLoading(false);
+      setBusy("");
     }
   }
 
+  function onDrop(e) {
+    e.preventDefault();
+    setOver(false);
+    const file = e.dataTransfer.files[0];
+    if (file && !/\.pdf$/i.test(file.name)) return setError("Only PDF files can be uploaded.");
+    loadPdf(file);
+  }
+
+  const langLabel = (l) => (l === "kn" ? "Kannada" : "Konkani (Kannada script)");
+  const plain = () =>
+    segments.map((s) => `${s.needs_review ? "[Needs review] " : ""}${s.translation}`).join("\n\n");
+
   function onDownload() {
-    const name = resultLang === "kn" ? "Kannada" : "Konkani (Kannada script)";
     const body = segments
       .map((s) => `${s.source}\n${s.needs_review ? "[Needs review] " : ""}${s.translation}`)
       .join("\n\n");
-    const blob = new Blob([`${DISCLAIMER}\n\nEnglish → ${name}\n\n${body}\n`], { type: "text/plain;charset=utf-8" });
+    const blob = new Blob([`${DISCLAIMER}\n\nEnglish → ${langLabel(resultLang)}\n\n${body}\n`], {
+      type: "text/plain;charset=utf-8",
+    });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = `translation-${resultLang}.txt`;
@@ -83,75 +110,163 @@ export default function Home() {
     URL.revokeObjectURL(a.href);
   }
 
+  async function onCopy() {
+    try {
+      await navigator.clipboard.writeText(plain());
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      setError("Copy failed. Use the download button instead.");
+    }
+  }
+
+  const terms = segments.flatMap((s) => s.terms);
+  const found = terms.filter((t) => t.found).length;
+  const reviewCount = segments.filter((s) => s.needs_review).length;
+  const shown = onlyReview ? segments.filter((s) => s.needs_review) : segments;
+
   return (
-    <main>
-      <h1>Law Script Translation</h1>
-      <p role="note" style={{ background: "#fff4e5", border: "1px solid #f0b46c", padding: "0.75rem" }}>
-        <strong>Disclaimer:</strong> {DISCLAIMER}
-      </p>
+    <>
+      <header className="top">
+        <div className="wrap">
+          <div className="brand">
+            <div className="mark" aria-hidden="true">ಅ</div>
+            <div>
+              <h1>Law Script Translation</h1>
+              <p>English legal text → Kannada · Konkani</p>
+            </div>
+          </div>
+          <span className="badge">Research prototype</span>
+        </div>
+      </header>
 
-      <form onSubmit={onSubmit}>
-        <label htmlFor="pdf">Upload a PDF (text PDFs only, not scanned pages): </label>
-        <input id="pdf" type="file" accept="application/pdf,.pdf" onChange={onPdf} disabled={loading} />
-        {notice && <p role="status" style={{ margin: "0.5rem 0" }}>{notice}</p>}
-        <label htmlFor="text" style={{ display: "block", marginTop: "0.75rem" }}>
-          English legal text (paste a section or a few pages; it is split into clauses automatically)
-        </label>
-        <textarea
-          id="text"
-          rows={8}
-          maxLength={MAX_CHARS}
-          required
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          style={{ width: "100%", display: "block", margin: "0.5rem 0" }}
-        />
-        <fieldset style={{ border: "none", padding: 0 }}>
-          <legend>Translate into</legend>
-          <label><input type="radio" name="lang" value="kn" checked={lang === "kn"} onChange={() => setLang("kn")} /> Kannada</label>{" "}
-          <label><input type="radio" name="lang" value="kok" checked={lang === "kok"} onChange={() => setLang("kok")} /> Konkani (Kannada script)</label>
-        </fieldset>
-        <button type="submit" disabled={loading} style={{ marginTop: "0.75rem" }}>
-          {loading ? "Translating…" : "Translate"}
-        </button>
-      </form>
+      <main className="wrap">
+        <p className="disclaimer" role="note">
+          <strong>Disclaimer:</strong> <span>{DISCLAIMER}</span>
+        </p>
 
-      {error && <p role="alert" style={{ color: "#b00020" }}>{error}</p>}
+        <form className="card" onSubmit={onSubmit}>
+          <fieldset className="langs">
+            <legend>Translate into</legend>
+            <div className="seg">
+              {Object.entries(LANGS).map(([code, l]) => (
+                <label key={code}>
+                  <input type="radio" name="lang" value={code} checked={lang === code} onChange={() => setLang(code)} />
+                  <span>
+                    {l.name}
+                    <small>{l.native}</small>
+                    {l.note && <small style={{ fontFamily: "var(--font)" }}>({l.note})</small>}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
 
-      {segments.length > 0 && (
-        <button type="button" onClick={onDownload} style={{ marginTop: "1.5rem" }}>
-          Download translation (.txt)
-        </button>
-      )}
+          <div
+            className={`drop${over ? " over" : ""}`}
+            onDragOver={(e) => { e.preventDefault(); setOver(true); }}
+            onDragLeave={() => setOver(false)}
+            onDrop={onDrop}
+          >
+            <label className="btn small" htmlFor="pdf">
+              {busy === "pdf" ? <><span className="spinner" aria-hidden="true" /> Reading PDF…</> : "Upload PDF"}
+            </label>
+            <input
+              id="pdf"
+              type="file"
+              accept="application/pdf,.pdf"
+              disabled={!!busy}
+              onChange={(e) => { const f = e.target.files[0]; e.target.value = ""; loadPdf(f); }}
+            />
+            <span>or drop a PDF here. Text PDFs only; scanned pages can't be read.</span>
+          </div>
 
-      {segments.length > 0 && (
-        <table style={{ width: "100%", marginTop: "1rem", borderCollapse: "collapse" }}>
-          <thead>
-            <tr><th align="left">English</th><th align="left">{resultLang === "kn" ? "Kannada" : "Konkani"}</th></tr>
-          </thead>
-          <tbody>
-            {segments.map((s, i) => (
-              <tr key={i} style={{ borderTop: "1px solid #ddd", verticalAlign: "top", background: s.needs_review ? "#fff8e1" : undefined }}>
-                <td style={{ padding: "0.5rem" }}>{s.source}</td>
-                <td style={{ padding: "0.5rem" }}>
-                  {s.needs_review && <strong style={{ color: "#8a5a00" }}>Needs review: </strong>}
-                  {s.translation}
+          <label className="field-label" htmlFor="text">
+            English legal text
+            <span>{text.length.toLocaleString()} / {MAX_CHARS.toLocaleString()}</span>
+          </label>
+          <textarea
+            id="text"
+            maxLength={MAX_CHARS}
+            required
+            value={text}
+            placeholder="Paste a section or a few pages. It is split into clauses automatically; numbers, sections and dates are kept unchanged."
+            onChange={(e) => setText(e.target.value)}
+          />
+          {notice && <p className="notice" role="status">{notice}</p>}
+
+          <div className="actions">
+            <button type="submit" className="btn primary" disabled={!!busy || !text.trim()}>
+              {busy === "translate" ? <><span className="spinner" aria-hidden="true" /> Translating…</> : "Translate"}
+            </button>
+            <button type="button" className="btn" disabled={!!busy} onClick={() => { setText(SAMPLE); setNotice(""); }}>
+              Try a sample
+            </button>
+            {text && (
+              <button type="button" className="btn" disabled={!!busy} onClick={() => { setText(""); setNotice(""); }}>
+                Clear
+              </button>
+            )}
+          </div>
+          {error && <p className="error" role="alert">{error}</p>}
+        </form>
+
+        {segments.length > 0 && (
+          <section className="card" aria-labelledby="results">
+            <div className="results-head">
+              <h2 id="results">Translation · {langLabel(resultLang)}</h2>
+              <div className="actions" style={{ marginTop: 0 }}>
+                <button type="button" className="btn small" onClick={onCopy}>{copied ? "Copied ✓" : "Copy"}</button>
+                <button type="button" className="btn small primary" onClick={onDownload}>Download .txt</button>
+              </div>
+            </div>
+
+            <ul className="stats">
+              <li><b>{segments.length}</b> segments</li>
+              {terms.length > 0 && <li><b>{found}/{terms.length}</b> approved legal terms used</li>}
+              <li className={reviewCount ? "warn" : ""}><b>{reviewCount}</b> need review</li>
+            </ul>
+
+            {reviewCount > 0 && (
+              <label className="filter">
+                <input type="checkbox" checked={onlyReview} onChange={(e) => setOnlyReview(e.target.checked)} />
+                Show only segments that need review
+              </label>
+            )}
+
+            <div className="cols" aria-hidden="true" style={{ marginTop: "0.75rem" }}>
+              <span>English</span><span>{LANGS[resultLang].name}</span>
+            </div>
+            {shown.map((s, i) => (
+              <div key={i} className={`seg-row${s.needs_review ? " review" : ""}`}>
+                <div className="src">{s.source}</div>
+                <div>
+                  {s.needs_review && <span className="flag">Needs review</span>}
+                  <div className="tgt" lang="kn">{s.translation}</div>
                   {s.terms.length > 0 && (
-                    <ul style={{ listStyle: "none", padding: 0, margin: "0.4rem 0 0", fontSize: "0.85em" }}>
+                    <ul className="terms" aria-label="Glossary check">
                       {s.terms.map((t) => (
-                        <li key={t.en} style={{ color: t.found ? "#2e6b30" : "#b00020" }}>
-                          {t.found ? "✓" : "✗"} {t.en} → {t.target}
-                          {!t.found && " (approved term not used)"}
+                        <li key={t.en} className={t.found ? "found" : "missing"}
+                            title={t.found ? "Approved term used" : "Approved term not used"}>
+                          {t.found ? "✓" : "✗"} {t.en} → <span className="kn">{t.target}</span>
                         </li>
                       ))}
                     </ul>
                   )}
-                </td>
-              </tr>
+                </div>
+              </div>
             ))}
-          </tbody>
-        </table>
-      )}
-    </main>
+            {shown.length === 0 && <p className="empty">No segments need review.</p>}
+          </section>
+        )}
+      </main>
+
+      <footer>
+        <div className="wrap">
+          <p>Model: AI4Bharat IndicTrans2. Konkani is shown in Kannada script.</p>
+          <p>{DISCLAIMER}</p>
+        </div>
+      </footer>
+    </>
   );
 }
