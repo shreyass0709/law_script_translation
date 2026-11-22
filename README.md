@@ -97,10 +97,11 @@ mkdir -p data/processed                 # put the copied CSVs here
 # 1. Smoke test (a minute): must print a dev loss and save models/lora-kn/
 python training/train_lora.py --lang kn --steps 2 data/processed/constitution_train_kn.csv
 # 2. Real run (Kannada): legal pairs + ~15% general text
-python training/train_lora.py --lang kn data/processed/constitution_train_kn.csv data/processed/anuvaad_legal_kn.csv data/processed/general_kn.csv
+python training/train_lora.py --lang kn data/processed/constitution_train_kn.csv data/processed/anuvaad_legal_kn.csv data/processed/acts_kn.csv data/processed/general_kn.csv
 #    Konkani: python training/train_lora.py --lang kok data/processed/constitution_train_kok.csv data/processed/general_kok.csv
 # 3. Score it against the baseline
 LORA_ADAPTER=models/lora-kn python training/evaluate.py
+LORA_ADAPTER=models/lora-kn python training/evaluate.py --test data/processed/acts_test_kn.csv   # held-out Karnataka Act
 ```
 
 If loading fails with `not a valid model identifier` / `OAuth token has expired`, your Hugging Face

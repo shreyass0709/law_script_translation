@@ -36,6 +36,32 @@ Newest entry first.
 
 ## Log
 
+### 2026-11-23 — Karnataka Acts: second test set
+- PRS India's gazette copies of Karnataka Acts hold both languages in one PDF (Kannada pages, then
+  English). `training/build_acts.py` reads the English text layer, OCRs the Kannada pages (their text
+  layer is a legacy font encoding, unusable) and matches by section / sub-section number. Fixes the
+  OCR reading anusvara as Kannada zero (ಒ೦ದು → ಒಂದು). PDFs go in `data/raw/` as `*KA.pdf`.
+- 9 Acts (PDFs in `data/raw/`, git-ignored): Karnataka Acts 16/2024 (76 pairs), 5/2024 (71), 41/2025 and
+  8/2024 (3; only a 2-page Kannada notice) from PRS India; Central Acts with their Kannada translations:
+  Motor Vehicles 1988 (313), Evidence 1872 (50, page-by-page diglot `evidence_both.pdf`), Environment
+  Protection 1986 (27), Hindu Marriage 1955 (25), RTI 2005 (11). Separate-file Acts are named
+  `<name>_e.pdf` / `<name>_k.pdf` (or `_english` / `_kannada`); India Code footnotes are stripped
+  because their numbers collide with section numbers. Spot checks of 12 rows were all correct pairs.
+- **Act 5 of 2024 is held out** as a second test set, `acts_test_kn.csv` (71 rows); never trained on.
+  The other **505 pairs** go in `acts_kn.csv` (added to the README training command).
+- E0 baseline on the Act test set: Kannada chrF++ **61.0**, BLEU 18.6, glossary 85%, references kept 94%.
+- The `A*.pdf` India Code files in `data/raw/` are English only and unused. Low yields (RTI, Evidence)
+  are from sections whose numbering differs between the files; page-by-page pairing of the Evidence
+  diglot could recover more if needed.
+
+### 2026-11-23 — native-speaker review sheets
+- `python training/review_sheets.py export` writes `data/processed/review_kn.xlsx` and `review_kok.xlsx`
+  (git-ignored): an instructions sheet, then one row per test sentence with an OK/FIX dropdown and a
+  "Corrected text" column. The Konkani sheet also shows the text in Kannada script for easier reading.
+- When they come back: `python training/review_sheets.py import <file(s)>` copies fixes into
+  `constitution_test.csv` and sets `reviewed=yes` on rows checked in both languages. Re-run
+  `evaluate.py` afterwards; the E0 numbers become final.
+
 ### 2026-11-22 — PDF upload, download, and a decoding fix
 - `POST /extract` takes PDF bytes as the request body and returns the text (pymupdf, now a main
   dependency). Limits: 10 MB; PDFs without an English text layer (scanned) get a 422 with a clear
