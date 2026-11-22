@@ -65,7 +65,7 @@ Open http://127.0.0.1:8000/docs and try `POST /translate` with
 `{"text": "Section 302 ...", "target_lang": "kn"}` (or `"kok"`). The text is split into sections,
 sub-sections, clauses and provisos (`backend/segment.py`); legal references such as `302(2)(b)`,
 `21A` and `5,000` are kept unchanged.
-`python backend	est_api.py` checks it end to end, including that numbers and dates survive.
+`python backend\test_api.py` checks it end to end, including that numbers and dates survive.
 
 ### Run the website
 
@@ -79,6 +79,32 @@ npm run dev
 
 Open http://localhost:3000, paste English text, pick Kannada or Konkani, and click Translate.
 The page sends `/api/*` requests on to the API at `http://127.0.0.1:8000`; set `API_URL` to change that.
+
+### Fine-tune on a GPU machine (e.g. the college GPU)
+
+The training data is git-ignored, so copy it yourself (pen drive / Drive): the CSVs in
+`data/processed/` (`constitution_train_kn.csv`, `anuvaad_legal_kn.csv`, `constitution_train_kok.csv`,
+and `constitution_test.csv` for scoring). On the GPU machine (Linux shown):
+
+```bash
+git clone https://github.com/shreyass0709/law_script_translation.git && cd law_script_translation
+python -m venv ~/.venvs/lst && source ~/.venvs/lst/bin/activate
+pip install torch                       # check `nvidia-smi`; pick the CUDA build from pytorch.org if needed
+pip install -r backend/requirements.txt
+hf auth login                           # your own Hugging Face token (see above)
+mkdir -p data/processed                 # put the copied CSVs here
+
+# 1. Smoke test (a minute): must print a dev loss and save models/lora-kn/
+python training/train_lora.py --lang kn --steps 2 data/processed/constitution_train_kn.csv
+# 2. Real run (Kannada)
+python training/train_lora.py --lang kn data/processed/constitution_train_kn.csv data/processed/anuvaad_legal_kn.csv
+# 3. Score it against the baseline
+LORA_ADAPTER=models/lora-kn python training/evaluate.py
+```
+
+Bring back the `models/lora-kn/` folder (a few MB). Running the API with `LORA_ADAPTER=models/lora-kn`
+set uses the fine-tuned model. Shared GPU servers often need jobs run inside `tmux` or `screen`
+so they keep going after you log out.
 
 ## Team workflow (4 people, one repo)
 

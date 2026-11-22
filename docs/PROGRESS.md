@@ -5,8 +5,9 @@ Newest entry first.
 
 ## Current status
 
-- **Sprint:** 2 (preprocessing + protection) — done
-- **Next up:** Sprint 4 — 2,683 Kannada legal pairs ready (see log); collect more, then the first LoRA run. Native-speaker check of the test set and the glossary still pending.
+- **Sprint:** 4 (data + fine-tuning) — in progress. Shreyas is working on it alone for now.
+- **Next up:** first LoRA run on the college GPU (`training/train_lora.py`, steps in the README);
+  more Kannada legal pairs (Central Acts). Native-speaker check of the test set and the glossary still pending.
 
 ## Owners
 
@@ -49,8 +50,16 @@ Newest entry first.
     mostly news, so it adds no legal skill. At most ~17k legal-looking rows could be mixed in.
   - A 70,157-row English/Konkani (Devanagari) Excel file: genuine Konkani but health/tourism text,
     header row missing, 57 duplicates. Keep it for later Konkani work.
-- ~2,700 pairs is small for LoRA. Next: more legal Kannada pairs (Kannada Central Acts on
-  legislative.gov.in / India Code, Karnataka Gazette two-language Acts), then the first LoRA run.
+- `training/build_trainset_kok.py` builds **275 English/Konkani pairs** from `konkani.pdf` (not a
+  diglot, so articles are matched by number across the whole text; suffixes follow Devanagari order,
+  243A = 243क). Test articles 12-100 skipped. Low count: many articles split into different clause
+  counts in the two PDFs and are dropped. A 10-row sample was all correct pairs.
+- `training/train_lora.py` LoRA-fine-tunes IndicTrans2 (attention projections, r=16, best epoch kept
+  by dev loss on a 5% hold-out) and saves `models/lora-<lang>/`. `backend/translate.py` loads it when
+  `LORA_ADAPTER` is set, so `evaluate.py` and the API use it unchanged. Target-side tokenisation was
+  checked on this laptop; the training loop itself has **not been run yet** (planned on the college GPU).
+- ~2,700 Kannada / 275 Konkani pairs is small for LoRA. Next: more legal Kannada pairs (Kannada
+  Central Acts on legislative.gov.in / India Code, Karnataka Gazette two-language Acts).
 
 ### 2026-10-20 — Sprint 2: segmentation and reference protection
 - `backend/segment.py` cleans pasted/PDF text (joins wrapped lines and hyphenation) and splits it at
