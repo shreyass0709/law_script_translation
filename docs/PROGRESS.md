@@ -34,6 +34,20 @@ Newest entry first.
 
 ## Log
 
+### 2026-11-22 — PDF upload, download, and a decoding fix
+- `POST /extract` takes PDF bytes as the request body and returns the text (pymupdf, now a main
+  dependency). Limits: 10 MB; PDFs without an English text layer (scanned) get a 422 with a clear
+  message, since there is no OCR. The page has an "Upload a PDF" button that fills the text box
+  (cut to 20,000 characters with a notice), a "Download translation (.txt)" button (disclaimer
+  included), and shows the API's own error messages.
+- **Bug fixed in `translate.py`:** beam search without `early_stopping` let padded batches of short
+  segments (a PDF's table of contents) run on to 256 tokens of "....", about 50 s per batch, so the
+  website's proxy timed out. With `early_stopping=True` a 3-page PDF (90 segments) translates in about
+  11 s. It also changed the baseline: Kannada chrF++ 52.0 → **52.6** (BLEU 14.5, glossary 75%),
+  Konkani 38.6 → **41.5** (BLEU 8.6, glossary 60%). Use these as the E0 numbers.
+- Checked end to end through the website: upload → extract → translate (both languages), non-PDF
+  → 400, blank PDF → 422; `backend/test_api.py` covers the same.
+
 ### 2026-10-20 — Sprint 3: legal glossary
 - `data/glossary/legal_terms.csv`: 59 English terms with Kannada and Konkani (Devanagari) equivalents.
   Each was checked against the official Constitution text (OCR, articles 12-100): a term counts as

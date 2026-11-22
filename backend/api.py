@@ -6,7 +6,8 @@ Docs at http://127.0.0.1:8000/docs
 from contextlib import asynccontextmanager
 from typing import Literal
 
-from fastapi import FastAPI
+import pymupdf
+from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel, Field
 
 import glossary
@@ -65,6 +66,35 @@ def _segment(source: str, translation: str, lang: str) -> Segment:
     terms = glossary.check(source, translation, lang)
     return Segment(source=source, translation=translation, terms=terms,
                    needs_review=not all(t["found"] for t in terms))
+
+
+MAX_PDF_BYTES = 10 * 1024 * 1024
+
+
+class ExtractResponse(BaseModel):
+    text: str
+    pages: int
+
+
+@app.post("/extract")
+async def extract_pdf(request: Request) -> ExtractResponse:
+    """PDF bytes in the request body -> its English text, for the page to fill the text box.
+
+    Only PDFs with a text layer work: there is no OCR, so scanned pages are refused.
+    """
+    data = await request.body()
+    if len(data) > MAX_PDF_BYTES:
+        raise HTTPException(413, "PDF is larger than 10 MB.")
+    try:
+        doc = pymupdf.open(stream=data, filetype="pdf")
+    except Exception:
+        raise HTTPException(400, "Not a readable PDF file.")
+    with doc:
+        text = "\n".join(page.get_text() for page in doc)
+        pages = doc.page_count
+    if sum(c.isascii() and c.isalpha() for c in text) < 50 * pages:
+        raise HTTPException(422, "No English text found. Scanned PDFs are not supported; paste the text instead.")
+    return ExtractResponse(text=text.strip(), pages=pages)
 
 
 @app.get("/glossary")
