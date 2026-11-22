@@ -103,6 +103,10 @@ python training/train_lora.py --lang kn data/processed/constitution_train_kn.csv
 LORA_ADAPTER=models/lora-kn python training/evaluate.py
 ```
 
+If loading fails with `not a valid model identifier` / `OAuth token has expired`, your Hugging Face
+login is stale (with `peft` installed, transformers also checks the Hub for an adapter): run
+`hf auth login` again, or set `HF_HUB_OFFLINE=1` when the model is already downloaded.
+
 Bring back the `models/lora-kn/` folder (a few MB). Running the API with `LORA_ADAPTER=models/lora-kn`
 set uses the fine-tuned model. Shared GPU servers often need jobs run inside `tmux` or `screen`
 so they keep going after you log out.

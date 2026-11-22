@@ -58,7 +58,7 @@ Newest entry first.
 - `training/train_lora.py` LoRA-fine-tunes IndicTrans2 (attention projections, r=16, best epoch kept
   by dev loss on a 5% hold-out) and saves `models/lora-<lang>/`. `backend/translate.py` loads it when
   `LORA_ADAPTER` is set, so `evaluate.py` and the API use it unchanged. Target-side tokenisation was
-  checked on this laptop; the training loop itself has **not been run yet** (planned on the college GPU).
+  checked on this laptop, and a 2-step smoke test ran on the laptop GPU (RTX 3050 4 GB): dev loss 1.706 → 1.689, adapter saved and loaded by `translate.py`. Full runs are planned on the college GPU.
 - ~2,700 Kannada / 275 Konkani pairs is small for LoRA. Next: more legal Kannada pairs (Kannada
   Central Acts on legislative.gov.in / India Code, Karnataka Gazette two-language Acts).
 - `training/build_general_mix.py` samples general text to mix in (~15% of training) so general
