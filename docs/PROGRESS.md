@@ -6,7 +6,7 @@ Newest entry first.
 ## Current status
 
 - **Sprint:** 2 (preprocessing + protection) — done
-- **Next up:** Sprint 3 — glossary (EN→KN, EN→KOK legal terms) and enforcement; native-speaker check of the test set
+- **Next up:** Sprint 4 — 2,683 Kannada legal pairs ready (see log); collect more, then the first LoRA run. Native-speaker check of the test set and the glossary still pending.
 
 ## Owners
 
@@ -33,6 +33,24 @@ Newest entry first.
 - 2026-10-08 — Frontend is **Next.js**; backend stays Python.
 
 ## Log
+
+### 2026-11-22 — Sprint 4: first Kannada training data
+- `training/build_trainset.py` builds **840 English/Kannada pairs** from the Constitution diglot
+  (`kannada.pdf`): every page except the test pages (68-169, articles 12-100), so no test text leaks
+  in. Each English page is paired with the Kannada page after it, and units are matched by article
+  and clause number; pairs with odd length ratios or amendment footnotes are dropped. Output:
+  `data/processed/constitution_train_kn.csv` (git-ignored). A 10-row sample was all correct pairs,
+  with small OCR letter slips.
+- `training/clean_anuvaad.py` cleans the Anuvaad legal-terms 2021 set (3,356 lines → **1,843 pairs**,
+  case-only duplicates removed): short Supreme Court case headers and names, useful for numbers and
+  citations. Known bad translation: "Special Leave Petition" → ವಿಶೇಷ ರಜೆ ಅರ್ಜಿ ("leave" as holiday).
+- Checked and **not used** for fine-tuning:
+  - Samanantar Kannada (4.09M pairs): AI4Bharat's own data that IndicTrans2 was already trained on,
+    mostly news, so it adds no legal skill. At most ~17k legal-looking rows could be mixed in.
+  - A 70,157-row English/Konkani (Devanagari) Excel file: genuine Konkani but health/tourism text,
+    header row missing, 57 duplicates. Keep it for later Konkani work.
+- ~2,700 pairs is small for LoRA. Next: more legal Kannada pairs (Kannada Central Acts on
+  legislative.gov.in / India Code, Karnataka Gazette two-language Acts), then the first LoRA run.
 
 ### 2026-10-20 — Sprint 2: segmentation and reference protection
 - `backend/segment.py` cleans pasted/PDF text (joins wrapped lines and hyphenation) and splits it at
