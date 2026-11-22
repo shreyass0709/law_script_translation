@@ -1,6 +1,7 @@
 """Run from the repo root: `python backend/test_api.py` (loads the real model)."""
 import sys
 
+import pymupdf
 from fastapi.testclient import TestClient
 
 from api import app
@@ -30,4 +31,14 @@ if __name__ == "__main__":
                 assert token in out, f"{lang}: {token!r} lost in translation"
         g = client.get("/glossary", params={"lang": "kn"}).json()
         assert {"en": "article", "target": "ಅನುಚ್ಛೇದ"} in g
+
+        # PDF upload: text comes back; non-PDFs and image-only (scanned) PDFs are refused.
+        pdf = pymupdf.open()
+        pdf.new_page().insert_textbox(pymupdf.Rect(50, 50, 550, 800), SAMPLE)
+        r = client.post("/extract", content=pdf.tobytes())
+        assert r.status_code == 200 and "302(2)(b)" in r.json()["text"], r.text
+        assert client.post("/extract", content=b"not a pdf").status_code == 400
+        blank = pymupdf.open()
+        blank.new_page()
+        assert client.post("/extract", content=blank.tobytes()).status_code == 422
     print("OK")

@@ -49,7 +49,9 @@ def translate(sentences: list[str], lang: str) -> list[str]:
         batch = ip.preprocess_batch(sentences[i:i + BATCH], src_lang=SRC, tgt_lang=tgt)
         inputs = tokenizer(batch, truncation=True, padding="longest", return_tensors="pt").to(DEVICE)
         with torch.no_grad():
-            out = model.generate(**inputs, max_length=256, num_beams=5)
+            # early_stopping: stop once 5 finished beams exist. Without it, padded batches of short
+            # segments (e.g. a PDF's table of contents) ran on to 256 tokens of "....", 50s per batch.
+            out = model.generate(**inputs, max_length=256, num_beams=5, early_stopping=True)
         decoded = tokenizer.batch_decode(out, skip_special_tokens=True, clean_up_tokenization_spaces=True)
         result += ip.postprocess_batch(decoded, lang=tgt)
     if lang == "kok":

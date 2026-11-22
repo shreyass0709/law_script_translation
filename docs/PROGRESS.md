@@ -36,16 +36,30 @@ Newest entry first.
 
 ## Log
 
+### 2026-11-22 — PDF upload, download, and a decoding fix
+- `POST /extract` takes PDF bytes as the request body and returns the text (pymupdf, now a main
+  dependency). Limits: 10 MB; PDFs without an English text layer (scanned) get a 422 with a clear
+  message, since there is no OCR. The page has an "Upload a PDF" button that fills the text box
+  (cut to 20,000 characters with a notice), a "Download translation (.txt)" button (disclaimer
+  included), and shows the API's own error messages.
+- **Bug fixed in `translate.py`:** beam search without `early_stopping` let padded batches of short
+  segments (a PDF's table of contents) run on to 256 tokens of "....", about 50 s per batch, so the
+  website's proxy timed out. With `early_stopping=True` a 3-page PDF (90 segments) translates in about
+  11 s. It also raised the baseline; the E0 table in the next entry has the new numbers.
+- Checked end to end through the website: upload → extract → translate (both languages), non-PDF
+  → 400, blank PDF → 422; `backend/test_api.py` covers the same.
+
 ### 2026-11-22 — evaluation: legal metrics in one command
 - `training/evaluate.py` now also reports **references kept** (numbers, sections, citations and dates
   from the source that appear unchanged in the output) and takes `--test <csv>` / `--lang`, so the
   held-out Act test set can be scored the same way. With `LORA_ADAPTER` set it scores the fine-tuned model.
-- E0 baseline (200M, no fine-tuning), 49-sentence Constitution test set, provisional until reviewed:
+- E0 baseline (200M, no fine-tuning, with the `early_stopping` fix), 49-sentence Constitution test
+  set, provisional until reviewed. Compare every fine-tuned run against this:
 
   | | chrF++ | BLEU | Glossary terms used | References kept |
   |---|---|---|---|---|
-  | Kannada | 52.0 | 14.9 | 76% (99/131) | 93% (42/45) |
-  | Konkani | 38.6 | 8.5 | 61% (80/131) | 100% (45/45) |
+  | Kannada | 52.6 | 14.5 | 75% (98/131) | 93% (42/45) |
+  | Konkani | 41.5 | 8.6 | 60% (79/131) | 100% (45/45) |
 
   The official translations keep only 89% of references by this check because they write some in
   Kannada letters (21A → 21ಎ); that is a style difference, not an error.
