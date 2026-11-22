@@ -82,6 +82,13 @@ The page sends `/api/*` requests on to the API at `http://127.0.0.1:8000`; set `
 
 ### Fine-tune on a GPU machine (e.g. the college GPU)
 
+**NMAMIT H200 cluster (Slurm):** use `training/slurm_train.sh`. It trains both languages and scores
+them; never run training directly on the login node. Clone to `~/law_script_translation`, venv at
+`~/env`, copy `data/processed/` in with `scp`, `mkdir -p logs`, then
+`sbatch --export=ALL,STEPS=2 training/slurm_train.sh` (smoke test) and `sbatch training/slurm_train.sh`.
+Log in to Hugging Face with `HF_HOME=~/law_script_translation/hf_cache hf auth login` so the job
+finds the token. Delete `hf_cache/` and the data after copying `models/` back (7-day rule).
+
 The training data is git-ignored, so copy it yourself (pen drive / Drive): **all** CSVs in
 `data/processed/` (legal pairs, `general_*.csv` mix, and `constitution_test.csv` for scoring and
 the leak check). On the GPU machine (Linux shown):
