@@ -9,6 +9,7 @@ from typing import Literal
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
 
+import glossary
 from segment import segment
 from translate import _load, translate
 
@@ -31,9 +32,17 @@ class TranslateRequest(BaseModel):
     target_lang: Literal["kn", "kok"]
 
 
+class Term(BaseModel):
+    en: str
+    target: str
+    found: bool  # approved term present in the translation
+
+
 class Segment(BaseModel):
     source: str
     translation: str
+    terms: list[Term]
+    needs_review: bool  # an approved legal term is missing from the translation
 
 
 class TranslateResponse(BaseModel):
@@ -48,5 +57,16 @@ def translate_text(req: TranslateRequest) -> TranslateResponse:
     outputs = translate(segs, req.target_lang) if segs else []
     return TranslateResponse(
         target_lang=req.target_lang,
-        segments=[Segment(source=s, translation=t) for s, t in zip(segs, outputs)],
+        segments=[_segment(s, t, req.target_lang) for s, t in zip(segs, outputs)],
     )
+
+
+def _segment(source: str, translation: str, lang: str) -> Segment:
+    terms = glossary.check(source, translation, lang)
+    return Segment(source=source, translation=translation, terms=terms,
+                   needs_review=not all(t["found"] for t in terms))
+
+
+@app.get("/glossary")
+def get_glossary(lang: Literal["kn", "kok"]) -> list[dict]:
+    return glossary.entries(lang)
