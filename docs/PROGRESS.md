@@ -5,7 +5,8 @@ Newest entry first.
 
 ## Current status
 
-- **Sprint:** 4 (data + fine-tuning) — in progress. Shreyas is working on it alone for now.
+- **Sprint:** 4 (data + fine-tuning) — in progress. Sprint 3 (glossary, 59 terms) done.
+  Shreyas is working on it alone for now.
 - **Next up:** first LoRA run on the college GPU (`training/train_lora.py`, steps in the README);
   more Kannada legal pairs (Central Acts). Native-speaker check of the test set and the glossary still pending.
 
@@ -60,6 +61,30 @@ Newest entry first.
   checked on this laptop; the training loop itself has **not been run yet** (planned on the college GPU).
 - ~2,700 Kannada / 275 Konkani pairs is small for LoRA. Next: more legal Kannada pairs (Kannada
   Central Acts on legislative.gov.in / India Code, Karnataka Gazette two-language Acts).
+
+### 2026-10-20 — Sprint 3: legal glossary
+- `data/glossary/legal_terms.csv`: 59 English terms with Kannada and Konkani (Devanagari) equivalents.
+  Each was checked against the official Constitution text (OCR, articles 12-100): a term counts as
+  found when the Kannada/Konkani word appears in the same articles as the English one. The
+  `kn_evidence`/`kok_evidence` columns record the result. "section", "sub-section" and "imprisonment"
+  are still "needs check": the Constitution barely uses them.
+  Several first guesses were wrong and fixed from the text, for example Konkani "Provided that" = शर्त,
+  "Explanation" = फोडणिशी, "Act" = अधिनेम; Kannada "Union" = ಒಕ್ಕೂಟ.
+- `backend/glossary.py` finds terms in each English segment (longest match first) and checks that the
+  translation contains the approved term (ignoring case endings). The API returns `terms` and
+  `needs_review` per segment, and `GET /glossary?lang=` lists the terms. The page marks segments
+  that miss a term.
+- Flag only, no automatic replacement: Kannada/Konkani add case endings to words, so swapping
+  words in the output is unsafe. Fine-tuning (Sprint 4) is the real fix.
+- Glossary accuracy on the 49-sentence test set (approved term used / terms in source):
+
+  | | Model | Official reference (same check) |
+  |---|---|---|
+  | Kannada | 76% (99/131) | 85% |
+  | Konkani | 61% (80/131) | 89% |
+
+  The reference column is a sanity check on the glossary itself; OCR slips and inflected forms keep it below 100%.
+- Not done yet: the architecture's 200+ terms. Add terms to the CSV with evidence; a native speaker should review it.
 
 ### 2026-10-20 — Sprint 2: segmentation and reference protection
 - `backend/segment.py` cleans pasted/PDF text (joins wrapped lines and hyphenation) and splits it at

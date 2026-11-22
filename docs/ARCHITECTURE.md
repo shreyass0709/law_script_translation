@@ -101,7 +101,8 @@ Things that must come out unchanged are replaced by placeholders, then restored:
 ### 4.5 Postprocessing
 - Restore placeholders.
 - **Glossary enforcement**: for every English legal term found in the source, check the
-  approved target term is in the output; if not, flag the segment (and replace where safe).
+  approved target term is in the output; if not, flag the segment. (Implemented as flag-only:
+  replacing words in agglutinative Kannada/Konkani output breaks case endings.)
 - Rebuild numbering and indentation from the segment hierarchy.
 
 ### 4.6 Backend API
